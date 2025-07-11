@@ -34,7 +34,7 @@ class Seq2SeqModel(nn.Module):
         logger.info(f"Inicializando modelo T5 con modo: {mode}")
         
         #CARGAMOS EL MODELO Y TOKENIZER
-        self.tokenizer = AutoTokenizer.from_pretained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = T5ForConditionalGeneration.from_pretrained(model_name)
         
         if self.mode == "full_finetune":
@@ -60,7 +60,7 @@ class Seq2SeqModel(nn.Module):
         Usa la API de Hugging Face transformers.adapters
         """
         logger.info("Configurando Adapters...")
-        if adapter_config in None:
+        if adapter_config is None:
             adapter_config = AdapterConfig.load("pfeiffer", reduction_factor = 16)
         self.model.add_adapter("en_es_adapter", config=adapter_config)
         self.model.train_adapter("en_es_adapter")
@@ -94,7 +94,7 @@ class Seq2SeqModel(nn.Module):
         """
         self.model.eval()
         inputs = self.tokenizer(input_text, return_tensor='pt', padding= True)
-        outputs = self.model.generate(**inputs, max_lenght=max_length)
+        outputs = self.model.generate(**inputs, max_length=max_length)
         decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens = True)
         
         return decoded
