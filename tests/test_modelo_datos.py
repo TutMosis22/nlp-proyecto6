@@ -1,4 +1,7 @@
 import pytest
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import torch
 from src.modelo_seq2seq import Seq2SeqModel
 from src.datos import crear_dataloaders
@@ -11,12 +14,12 @@ def modelo():
 
 @pytest.fixture(scope="module")
 def dataloader():
-    return crear_dataloaders(batch_size=2)[0]  # solo el train_loader
+    return crear_dataloaders(batch_size=2)[0]  #SOLO EL train_loader
 
 
 def test_forward_pass(modelo, dataloader):
     """
-    Prueba de paso hacia adelante (forward) del modelo usando un batch real.
+    Prueba de paso hacia adelante (forward) del modelo usando un batch real
     """
     batch = next(iter(dataloader))
 
@@ -35,7 +38,7 @@ def test_generation(modelo):
     """
     Prueba simple de generación de texto traducido.
     """
-    entrada = "translate English to Spanish: The book is on the table."
+    entrada = "translate English to Spanish: The book is on the table"
     salida = modelo.generate(entrada)
 
     assert isinstance(salida, list)
