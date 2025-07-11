@@ -21,11 +21,12 @@ proyecto1_seq2seq/
 │   ├── modelo_seq2seq.py     # Modelo Encoder-Decoder
 │   ├── decoders/             # Decodificadores: greedy, beam, top-k, etc.
 │   ├── datos.py              # Carga y procesamiento de datos
-│   ├── evaluation.py         # BLEU, tiempo, memoria
+│   ├── evaluation.  py         # BLEU, tiempo, memoria
 │   
 ├── tests/                    # Pruebas unitarias y funcionales
 │   ├── test_greedy.py
 │   ├── test_beam.py
+|   ├── test_modelo_datos.py
 │   ├── test_evaluation.py
 │   
 ├── benchmarks/               # Scripts y resultados de benchmarks
