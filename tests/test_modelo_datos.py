@@ -5,7 +5,7 @@
 import pytest
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import torch
 from src.modelo_seq2seq import Seq2SeqModel
 from src.datos import crear_dataloaders
