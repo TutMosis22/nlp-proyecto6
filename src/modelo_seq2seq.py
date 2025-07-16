@@ -3,7 +3,7 @@ from torch import nn
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 
 from peft import get_peft_model, LoraConfig, TaskType
-from transformers.adapters import AdapterConfig
+#from transformers.adapters import AdapterConfig
 
 import logging
 
@@ -39,8 +39,8 @@ class Seq2SeqModel(nn.Module):
         
         if self.mode == "full_finetune":
             self._setup_full_finetune()
-        elif self.mode == "adapters":
-            self._setup_adapters(adapter_config)
+        #elif self.mode == "adapters":
+        #    self._setup_adapters(adapter_config)
         elif self.mode == "lora":
             self._setup_lora(lora_config)
         else:
@@ -54,16 +54,16 @@ class Seq2SeqModel(nn.Module):
         for param in self.model.parameters():
             param.requires_grad = True
             
-    def _setup_adapters(self, adapter_config = None):
-        """
-        Activa Adapters en el modelo
-        Usa la API de Hugging Face transformers.adapters
-        """
-        logger.info("Configurando Adapters...")
-        if adapter_config is None:
-            adapter_config = AdapterConfig.load("pfeiffer", reduction_factor = 16)
-        self.model.add_adapter("en_es_adapter", config=adapter_config)
-        self.model.train_adapter("en_es_adapter")
+#    def _setup_adapters(self, adapter_config = None):
+#        """
+#        Activa Adapters en el modelo
+#        Usa la API de Hugging Face transformers.adapters
+#        """
+#        logger.info("Configurando Adapters...")
+#        if adapter_config is None:
+#            adapter_config = AdapterConfig.load("pfeiffer", reduction_factor = 16)
+#        self.model.add_adapter("en_es_adapter", config=adapter_config)
+#        self.model.train_adapter("en_es_adapter")
         
     def _setup_lora(self, lora_config = None):
         """
@@ -88,13 +88,13 @@ class Seq2SeqModel(nn.Module):
                           attention_mask=attention_mask,
                           labels=labels)
         
-    def generate(self, input_text, max_length = 128):
+    def generate(self, input_text, max_length=128):
         """
-        Genera texto traducido dada una entradaa
+        Genera texto traducido dada una entrada
         """
         self.model.eval()
-        inputs = self.tokenizer(input_text, return_tensor='pt', padding= True)
-        outputs = self.model.generate(**inputs, max_length=max_length)
-        decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens = True)
-        
+        with torch.no_grad():
+            inputs = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True, max_length=max_length)
+            outputs = self.model.generate(**inputs, max_length=max_length)
+            decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return decoded
