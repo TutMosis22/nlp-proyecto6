@@ -1,44 +1,43 @@
-# Proyecto 6 - Traducción EN↔ES con LoRA vs Adapters vs Fine-tune Completo
+# Proyecto 6 - Traducción EN↔ES con LoRA vs Fine-tuning Completo
 
 ## Descripción
 
-Este proyecto tiene como objetivo comparar tres técnicas de ajuste de parámetros sobre un modelo T5-Small para la tarea de traducción inglés-español:
+Este proyecto compara dos enfoques de ajuste de parámetros sobre un modelo T5-Small para traducción inglés ↔ español:
 
-* Fine-tuning completo del modelo base.
-* Ajuste con Adapters (bottleneck).
-* Integración de LoRA (Low-Rank Adaptation).
+- **Fine-tuning completo**: entrenamiento total del modelo base.
+- **LoRA (Low-Rank Adaptation)**: entrenamiento eficiente de parámetros adicionales.
 
-Se evalúa su rendimiento en términos de calidad de traducción (BLEU/COMET), eficiencia (uso de VRAM y tiempo de entrenamiento), y facilidad de implementación.
+Se evalúan en términos de calidad de traducción (BLEU/ROUGE), eficiencia (latencia y uso de memoria), y se ofrece una **app local** para que el usuario interactúe con ambos modelos y compare los resultados directamente.
 
 ---
 
-## Estructura del repositorio (de momento)
+## Estructura del repositorio
+
 
 ```
-proyecto1_seq2seq/
-├── src/                       # Código fuente del proyecto
-│   ├── __init__.py
-│   ├── modelo_seq2seq.py     # Modelo Encoder-Decoder
-│   ├── decoders/             # Decodificadores: greedy, beam, top-k, etc.
-│   ├── datos.py              # Carga y procesamiento de datos
-│   ├── evaluation.  py         # BLEU, tiempo, memoria
-│   
-├── tests/                    # Pruebas unitarias y funcionales
-│   ├── test_greedy.py
-│   ├── test_beam.py
-|   ├── test_modelo_datos.py
-│   ├── test_evaluation.py
-│   
-├── benchmarks/               # Scripts y resultados de benchmarks
-│   ├── run_bench.sh
-│   ├── bench_translation.py
-│   ├── results/
-│       ├── bleu_vs_latency.csv
-│       ├── memoria_vs_len.csv
-│
-├── exposicion.ipynb          # Cuaderno de exposición final
-├── requirements.txt          # Dependencias del proyecto
-├── README.md                 # Este archivo
+NLP-PROYECTO6/
+├── app/ # Interfaz web local (Streamlit)
+│ └── main.py
+├── benchmarks/ # Scripts y notebook para análisis de resultados
+│ ├── bench_translation.py
+│ ├── benchmark_modelos.ipynb
+│ ├── run_bench.sh
+│ └── results/
+├── checkpoints/ # Modelos entrenados (se generan aquí)
+│ ├── full_finetune/
+│ └── lora/
+├── src/ # Código fuente principal
+│ ├── datos.py
+│ ├── entrenamiento.py
+│ ├── evaluation.py
+│ └── modelo_seq2seq.py
+├── tests/ # Pruebas unitarias
+│ ├── test_evaluation.py
+│ └── test_modelo_datos.py
+├── experimentos.py # Script que carga modelos, evalúa y compara
+├── requirements.txt # Dependencias del proyecto
+├── README.md # Este archivo
+└── pytest.ini
 ```
 
 ---
@@ -64,7 +63,14 @@ pip install -r requirements.txt
 pytest -q --cov=src
 ```
 
-4. Corre los benchmarks:
+4. Evaluar modelos y comparar métricas:
+
+```bash
+python experimentos.py
+```
+Esto genera comparaciones de BLEU y ROUGE en consola y las guarda en resultados_experimentos.csv
+
+5. Corre los benchmarks (latencia, memoria, etc):
 
 ```bash
 bash benchmarks/run_bench.sh
@@ -75,9 +81,12 @@ bash benchmarks/run_bench.sh
 ```bash
 jupyter notebook exposicion.ipynb
 ```
+6. Ejecutar app local (traductor interactivo)
 
-6. Video demostrativo:
-   [Lo colocaré al finalizar el proyecto]
+streamlit run app/main.py
+
+7. Video demostrativo:
+   [Link en el UNI Virtual]
 
 ---
 
@@ -89,6 +98,14 @@ jupyter notebook exposicion.ipynb
 * Recomendado: NVIDIA con soporte CUDA para entrenamiento eficiente
 
 ---
+
+## Métricas utilizadas
+- BLEU: comparación n-gram entre referencia y predicción
+- ROUGE-L: medida basada en subcadenas comunes más largas
+- Latencia: p50/p95/p99 (tiempo por traducción)
+- Consumo de memoria: RAM y VRAM
+
+Nota: Se descartó el uso de Adapters por simplicidad y compatibilidad.
 
 ## Licencia
 
