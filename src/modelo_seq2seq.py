@@ -1,100 +1,76 @@
 import torch
 from torch import nn
-from transformers import T5ForConditionalGeneration, AutoTokenizer
-
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from peft import get_peft_model, LoraConfig, TaskType
-#from transformers.adapters import AdapterConfig
-
 import logging
 
 logger = logging.getLogger(__name__)
 
 class Seq2SeqModel(nn.Module):
     """
-    Modelo Seq2Seq basado en T5-Small con tres modos de entrenaminto:
-    - Fine-tuning
-    - Adapters
-    - LoRA
+    Clase unificada para manejar modelos entrenados para traducción
+    usando Helsinki-NLP. Detecta idioma automáticamente y aplica
+    LoRA si se indica.
     """
-    
-    def __init__(self, model_name="t5-small", mode="full_finetune", adapter_config=None, lora_config=None):
+
+    def __init__(self, mode="full_finetune", lora_config=None):
         """
-        Inicialización del modelo-
-        
         Parámetros:
-        model_name: nombre del modelo preentrenado
-        mode: 'full_finetune', 'adapters' o 'lroa'
-        adapter_config: configuración opcional para adapters
-        lora_config: configuración opcional para LoRA
+        mode: 'full_finetune' o 'lora'
         """
         super().__init__()
-        
         self.mode = mode
-        self.model_name = model_name
-        logger.info(f"Inicializando modelo T5 con modo: {mode}")
-        
-        #CARGAMOS EL MODELO Y TOKENIZER
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = T5ForConditionalGeneration.from_pretrained(model_name)
-        
-        if self.mode == "full_finetune":
-            self._setup_full_finetune()
-        #elif self.mode == "adapters":
-        #    self._setup_adapters(adapter_config)
-        elif self.mode == "lora":
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        logger.info(f"Inicializando modelo en modo: {mode}")
+
+        # Usamos un modelo base por ahora (luego se cambia por idioma)
+        self.model_name = "Helsinki-NLP/opus-mt-en-es"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name).to(self.device)
+
+        if self.mode == "lora":
             self._setup_lora(lora_config)
-        else:
-            raise ValueError(f"Modo de entrenamiento desconocido: {self.mode}")
-    
-    def _setup_full_finetune(self):
-        """
-        Modo por defecto: se entrena tod el modelo
-        """
-        logger.info("Fine-tuning completo: todos los parámetros entrenables")
-        for param in self.model.parameters():
-            param.requires_grad = True
-            
-#    def _setup_adapters(self, adapter_config = None):
-#        """
-#        Activa Adapters en el modelo
-#        Usa la API de Hugging Face transformers.adapters
-#        """
-#        logger.info("Configurando Adapters...")
-#        if adapter_config is None:
-#            adapter_config = AdapterConfig.load("pfeiffer", reduction_factor = 16)
-#        self.model.add_adapter("en_es_adapter", config=adapter_config)
-#        self.model.train_adapter("en_es_adapter")
-        
-    def _setup_lora(self, lora_config = None):
-        """
-        Aplica LoRA usando PEFT (Parameter-Efficient Fine Tuning)
-        """
-        logger.info("Configurando LoRA...")
+
+    def _setup_lora(self, lora_config=None):
+        logger.info("Aplicando LoRA...")
         if lora_config is None:
             lora_config = LoraConfig(
                 task_type=TaskType.SEQ_2_SEQ_LM,
-                r = 8,
-                lora_alpha = 16,
-                lora_dropout = 0.1,
-                bias = "None"
+                target_modules=["q_proj", "v_proj"],
+                r=8,
+                lora_alpha=16,
+                lora_dropout=0.1,
+                bias="none"
             )
         self.model = get_peft_model(self.model, lora_config)
-        
-    def forward(self, input_ids, attention_mask, labels = None):
+
+    def generate(self, input_texts, max_length=128):
         """
-        Forward del modelo. Devuelve loss si hay labels, o logits si no
+        Detecta idioma por texto y selecciona el modelo de traducción adecuado.
         """
-        return self.model(input_ids = input_ids,
-                          attention_mask=attention_mask,
-                          labels=labels)
-        
-    def generate(self, input_text, max_length=128):
-        """
-        Genera texto traducido dada una entrada
-        """
-        self.model.eval()
-        with torch.no_grad():
-            inputs = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True, max_length=max_length)
-            outputs = self.model.generate(**inputs, max_length=max_length)
-            decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        return decoded
+        outputs = []
+        for text in input_texts:
+            # Detectar idioma simple
+            if any(c in text.lower() for c in "áéíóúñ¿¡"):
+                modelo_direccion = "es-en"
+                model_name = "Helsinki-NLP/opus-mt-es-en"
+            else:
+                modelo_direccion = "en-es"
+                model_name = "Helsinki-NLP/opus-mt-en-es"
+
+            # Cargar modelo adecuado si es distinto
+            if model_name != self.model_name:
+                self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+                self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self.device)
+                if self.mode == "lora":
+                    self._setup_lora()
+                self.model_name = model_name
+
+            logger.info(f"Usando modelo: {modelo_direccion} para texto: {text}")
+
+            inputs = self.tokenizer([text], return_tensors="pt", truncation=True, padding=True).to(self.device)
+            with torch.no_grad():
+                translated = self.model.generate(**inputs, max_length=max_length)
+            decoded = self.tokenizer.batch_decode(translated, skip_special_tokens=True)
+            outputs.append(decoded[0])
+        return outputs
