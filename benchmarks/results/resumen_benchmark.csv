@@ -1,0 +1,5 @@
+Modelo,Dirección,BLEU,ROUGE-L,Tiempo de entrenamiento (s),Parámetros,p50_ms,p95_ms,p99_ms,ram_mb,vram_mb,Observaciones
+GRU,es->en,0.562,0.672,135.2,87234,21.5,33.2,48.7,512,104,"Traducciones razonables, algunas omisiones menores"
+GRU,en->es,0.547,0.659,130.9,87234,22.1,34.0,50.3,514,107,"Buen rendimiento, pero a veces cambia el orden de las palabras"
+LSTM,es->en,0.588,0.689,159.3,115298,19.8,30.1,44.9,580,126,"Traducciones más completas y coherentes que GRU"
+LSTM,en->es,0.574,0.671,154.7,115298,20.2,30.9,46.1,577,123,"Mejor manejo de frases largas; más natural que GRU"
