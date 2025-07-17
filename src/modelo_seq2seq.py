@@ -23,7 +23,7 @@ class Seq2SeqModel(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Inicializando modelo en modo: {mode}")
 
-        # Usamos un modelo base por ahora (luego se cambia por idioma)
+        #USAMOS UN MODELO BASE (LUEGO SE CAMBIA POR IDIOMA)
         self.model_name = "Helsinki-NLP/opus-mt-en-es"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name).to(self.device)
@@ -50,7 +50,7 @@ class Seq2SeqModel(nn.Module):
         """
         outputs = []
         for text in input_texts:
-            # Detectar idioma simple
+            #DETECTAR IDIOMA DE FORMA "SIMPLE"
             if any(c in text.lower() for c in "áéíóúñ¿¡"):
                 modelo_direccion = "es-en"
                 model_name = "Helsinki-NLP/opus-mt-es-en"
@@ -58,7 +58,7 @@ class Seq2SeqModel(nn.Module):
                 modelo_direccion = "en-es"
                 model_name = "Helsinki-NLP/opus-mt-en-es"
 
-            # Cargar modelo adecuado si es distinto
+            #CARGAR MODELO ADECUADO SI ES DISTINTO
             if model_name != self.model_name:
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
                 self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self.device)
